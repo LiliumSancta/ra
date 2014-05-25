@@ -540,6 +540,14 @@ extern struct Battle_Config
 	int teleport_on_portal;
 	int cart_revo_knockback;
 	int guild_notice_changemap;
+
+	// Itens Visuais - Lilium Sancta/Fallen Angel~
+	int reserved_costume_id;
+	int costume_trade;
+	int costume_drop;
+	int costume_sell;
+	int costume_vend;
+
 } battle_config;
 
 void do_init_battle(void);

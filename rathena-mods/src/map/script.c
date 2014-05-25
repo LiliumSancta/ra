@@ -7773,7 +7773,8 @@ BUILDIN_FUNC(getbrokenid)
 
 	num=script_getnum(st,2);
 	for(i=0; i<MAX_INVENTORY; i++) {
-		if(sd->status.inventory[i].attribute){
+		// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if(sd->status.inventory[i].attribute && sd->status.inventory[i].attribute != 5){
 				brokencounter++;
 				if(num==brokencounter){
 					id=sd->status.inventory[i].nameid;
@@ -7802,7 +7803,8 @@ BUILDIN_FUNC(repair)
 
 	num=script_getnum(st,2);
 	for(i=0; i<MAX_INVENTORY; i++) {
-		if(sd->status.inventory[i].attribute){
+		// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if(sd->status.inventory[i].attribute && sd->status.inventory[i].attribute != 5){
 				repaircounter++;
 				if(num==repaircounter){
 					sd->status.inventory[i].attribute=0;
@@ -7831,7 +7833,7 @@ BUILDIN_FUNC(repairall)
 
 	for(i = 0; i < MAX_INVENTORY; i++)
 	{
-		if(sd->status.inventory[i].nameid && sd->status.inventory[i].attribute)
+		if(sd->status.inventory[i].nameid && sd->status.inventory[i].attribute && sd->status.inventory[i].attribute != 5)
 		{
 			sd->status.inventory[i].attribute = 0;
 			clif_produceeffect(sd,0,sd->status.inventory[i].nameid);
@@ -18911,6 +18913,70 @@ BUILDIN_FUNC(preg_match) {
 #endif
 }
 
+/*==========================================
+ * Item Costume
+ *------------------------------------------*/
+BUILDIN_FUNC(itemcostume)
+{
+	int i = -1, num, ep, c;
+	TBL_PC *sd;
+
+	num = script_getnum(st,2); // Equip Slot
+	sd = script_rid2sd(st);
+
+	if( sd == NULL )
+		return 0;
+
+	if( num > 0 && num <= ARRAYLENGTH(equip) )
+		i = pc_checkequip(sd, equip[num - 1]);
+
+	if( i < 0 || !sd->inventory_data[i] )
+		return 0;
+
+	ep = sd->status.inventory[i].equip;
+	if( !(ep&EQP_HEAD_LOW) && !(ep&EQP_HEAD_MID) && !(ep&EQP_HEAD_TOP) )
+		return 0;
+
+	for(c = sd->inventory_data[i]->slot - 1; c >= 0; --c) {
+		if(sd->status.inventory[i].card[c] && itemdb_type(sd->status.inventory[i].card[c]) == IT_CARD) {
+
+			int flag2;
+			struct item item_tmp2;
+
+			memset(&item_tmp2,0,sizeof(item_tmp2));
+
+			item_tmp2.nameid   = sd->status.inventory[i].card[c];
+			item_tmp2.identify = 1;
+
+			if((flag2=pc_additem(sd,&item_tmp2,1,LOG_TYPE_SCRIPT))) {
+				clif_additem(sd,0,0,flag2);
+				map_addflooritem(&item_tmp2,1,sd->bl.m,sd->bl.x,sd->bl.y,0,0,0,0);
+			}
+		}
+	}
+
+	log_pick_pc(sd, LOG_TYPE_SCRIPT, -1, &sd->status.inventory[i]);
+	pc_unequipitem(sd,i,2);
+	clif_delitem(sd,i,1,3);
+	// --------------------------------------------------------------------
+	sd->status.inventory[i].refine = 0;
+	sd->status.inventory[i].attribute = 5;
+	sd->status.inventory[i].card[0] = CARD0_CREATE;
+	sd->status.inventory[i].card[1] = 0;
+	sd->status.inventory[i].card[2] = GetWord(battle_config.reserved_costume_id, 0);
+	sd->status.inventory[i].card[3] = GetWord(battle_config.reserved_costume_id, 1);
+
+	if( ep&EQP_HEAD_TOP ) { ep &= ~EQP_HEAD_TOP; ep |= EQP_COSTUME_HEAD_TOP; }
+	if( ep&EQP_HEAD_LOW ) { ep &= ~EQP_HEAD_LOW; ep |= EQP_COSTUME_HEAD_LOW; }
+	if( ep&EQP_HEAD_MID ) { ep &= ~EQP_HEAD_MID; ep |= EQP_COSTUME_HEAD_MID; }
+	// --------------------------------------------------------------------
+	log_pick_pc(sd, LOG_TYPE_SCRIPT, 1, &sd->status.inventory[i]);
+	clif_additem(sd,i,1,0);
+	pc_equipitem(sd,i,ep);
+	clif_misceffect(&sd->bl,3);
+
+	return 0;
+}
 /// script command definitions
 /// for an explanation on args, see add_buildin_func
 struct script_function buildin_func[] = {
@@ -19404,6 +19470,9 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(addspiritball,"ii?"),
 	BUILDIN_DEF(delspiritball,"i?"),
 	BUILDIN_DEF(countspiritball,"?"),
+
+	// Item Costume
+	BUILDIN_DEF(itemcostume,"i"),
 
 #include "../custom/script_def.inc"
 

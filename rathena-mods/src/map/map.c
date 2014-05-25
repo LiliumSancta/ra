@@ -1557,6 +1557,13 @@ void map_reqnickdb(struct map_session_data * sd, int charid)
 
 	nullpo_retv(sd);
 
+	// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if( charid == battle_config.reserved_costume_id )
+	{
+		clif_solved_charname(sd->fd, charid, "Visuais Ragmaniacos");
+		return;
+	}
+
 	tsd = map_charid2sd(charid);
 	if( tsd )
 	{

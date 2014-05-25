@@ -1831,7 +1831,11 @@ void clif_selllist(struct map_session_data *sd)
 
 			if( sd->status.inventory[i].bound && !pc_can_give_bounded_items(sd))
 				continue; // Don't allow sale of bound items
-
+				
+			// Itens Visuais - Lilium Sancta/Fallen Angel~
+			if( !battle_config.costume_sell && sd->status.inventory[i].attribute == 5 )
+				continue; // Não mostrar itens visuais na venda 
+				
 			val=sd->inventory_data[i]->value_sell;
 			if( val < 0 )
 				continue;
@@ -2246,7 +2250,11 @@ void clif_additem(struct map_session_data *sd, int n, int amount, int fail)
 		else
 			WFIFOW(fd,offs+6)=sd->status.inventory[n].nameid;
 		WFIFOB(fd,offs+8)=sd->status.inventory[n].identify;
-		WFIFOB(fd,offs+9)=sd->status.inventory[n].attribute;
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if (sd->status.inventory[n].attribute == 5)
+			WFIFOB(fd,9)=0;
+		else
+			WFIFOB(fd,9)=sd->status.inventory[n].attribute;
 		WFIFOB(fd,offs+10)=sd->status.inventory[n].refine;
 		clif_addcards(WFIFOP(fd,offs+11), &sd->status.inventory[n]);
 #if PACKETVER < 20120925
@@ -2334,7 +2342,11 @@ void clif_item_sub_v5(unsigned char *buf, int n, int idx, struct item *i, struct
 		WBUFW(buf,n+28)= (id->equip&EQP_VISIBLE)?id->look:0;
 		//V5_ITEM_flag
 		WBUFB(buf,n+30)=i->identify; //0x1 IsIdentified
-		WBUFB(buf,n+30)|=(i->attribute)?0x2:0; //0x2 IsDamaged
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if (i->attribute == 5)
+			WBUFB(buf,n+30)|= 0; //0x2 IsDamaged
+		else
+			WBUFB(buf,n+30)|=(i->attribute)?0x2:0; //0x2 IsDamaged
 		WBUFB(buf,n+30)|= (i->favorite)?0x4:0; //0x4 PlaceETCTab
 	}
 	else { //normal 24B
@@ -2362,7 +2374,11 @@ void clif_item_sub(unsigned char *buf, int n, int idx, struct item *i, struct it
 	if (equip >= 0) { //Equippable item 28.B
 		WBUFW(buf,n+6)=equip;
 		WBUFW(buf,n+8)=i->equip;
-		WBUFB(buf,n+10)=i->attribute;
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if (i->attribute == 5)
+			WBUFB(buf,n+10)=0;
+		else
+			WBUFB(buf,n+10)=i->attribute;
 		WBUFB(buf,n+11)=i->refine;
 		clif_addcards(WBUFP(buf, n+12), i); //8B
 #if PACKETVER >= 20071002
@@ -3966,7 +3982,11 @@ void clif_tradeadditem(struct map_session_data* sd, struct map_session_data* tsd
 		buf = WBUFP(buf,1); //Advance 1B
 #endif
 		WBUFB(buf,8) = sd->status.inventory[index].identify; //identify flag
-		WBUFB(buf,9) = sd->status.inventory[index].attribute; // attribute
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if (sd->status.inventory[index].attribute == 5)
+			WBUFB(buf,9) = 0;
+		else
+			WBUFB(buf,9) = sd->status.inventory[index].attribute; // attribute
 		WBUFB(buf,10)= sd->status.inventory[index].refine; //refine
 		clif_addcards(WBUFP(buf, 11), &sd->status.inventory[index]);
 	}
@@ -4106,7 +4126,11 @@ void clif_storageitemadded(struct map_session_data* sd, struct item* i, int inde
 	WFIFOW(fd, 8) = ( view > 0 ) ? view : i->nameid; // id
 	WFIFOB(fd,10) = itemdb_type(i->nameid); //type
 	WFIFOB(fd,11) = i->identify; //identify flag
-	WFIFOB(fd,12) = i->attribute; // attribute
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if (i->attribute == 5)
+		WFIFOB(fd,12) = 0;
+	else
+		WFIFOB(fd,12) = i->attribute; // attribute
 	WFIFOB(fd,13) = i->refine; //refine
 	clif_addcards(WFIFOP(fd,14), i);
 	WFIFOSET(fd,packet_len(0x1c4));
@@ -6068,7 +6092,7 @@ void clif_item_repair_list(struct map_session_data *sd,struct map_session_data *
 	WFIFOHEAD(fd, MAX_INVENTORY * 13 + 4);
 	WFIFOW(fd,0)=0x1fc;
 	for(i=c=0;i<MAX_INVENTORY;i++){
-		if((nameid=dstsd->status.inventory[i].nameid) > 0 && dstsd->status.inventory[i].attribute!=0){// && skill_can_repair(sd,nameid)){
+		if((nameid=dstsd->status.inventory[i].nameid) > 0 && dstsd->status.inventory[i].attribute!=0 && dstsd->status.inventory[i].attribute!=5){// && skill_can_repair(sd,nameid)){ // Itens Visuais - Lilium Sancta/Fallen Angel~
 			WFIFOW(fd,c*13+4) = i;
 			WFIFOW(fd,c*13+6) = nameid;
 			WFIFOB(fd,c*13+8) = dstsd->status.inventory[i].refine;
@@ -6232,7 +6256,11 @@ void clif_cart_additem(struct map_session_data *sd,int n,int amount,int fail)
 		WBUFW(buf,8)=sd->status.cart[n].nameid;
 	WBUFB(buf,10)=itemdb_type(sd->status.cart[n].nameid);
 	WBUFB(buf,11)=sd->status.cart[n].identify;
-	WBUFB(buf,12)=sd->status.cart[n].attribute;
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if (sd->status.cart[n].attribute == 5)
+		WBUFB(buf,12) = 0;
+	else
+		WBUFB(buf,12)=sd->status.cart[n].attribute;
 	WBUFB(buf,13)=sd->status.cart[n].refine;
 	clif_addcards(WBUFP(buf,14), &sd->status.cart[n]);
 	WFIFOSET(fd,packet_len(0x1c5));
@@ -6588,7 +6616,11 @@ void clif_vendinglist(struct map_session_data* sd, int id, struct s_vending* ven
 		WFIFOB(fd,offset+ 8+i*22) = itemtype(data->nameid);
 		WFIFOW(fd,offset+ 9+i*22) = ( data->view_id > 0 ) ? data->view_id : vsd->status.cart[index].nameid;
 		WFIFOB(fd,offset+11+i*22) = vsd->status.cart[index].identify;
-		WFIFOB(fd,offset+12+i*22) = vsd->status.cart[index].attribute;
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if (vsd->status.cart[index].attribute == 5)
+			WFIFOB(fd,offset+12+i*22) = 0;
+		else
+			WFIFOB(fd,offset+12+i*22) = vsd->status.cart[index].attribute;
 		WFIFOB(fd,offset+13+i*22) = vsd->status.cart[index].refine;
 		clif_addcards(WFIFOP(fd,offset+14+i*22), &vsd->status.cart[index]);
 	}
@@ -6647,7 +6679,11 @@ void clif_openvending(struct map_session_data* sd, int id, struct s_vending* ven
 		WFIFOB(fd,16+i*22) = itemtype(data->nameid);
 		WFIFOW(fd,17+i*22) = ( data->view_id > 0 ) ? data->view_id : sd->status.cart[index].nameid;
 		WFIFOB(fd,19+i*22) = sd->status.cart[index].identify;
-		WFIFOB(fd,20+i*22) = sd->status.cart[index].attribute;
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+		if (sd->status.cart[index].attribute == 5)
+			WFIFOB(fd,20+i*22) = 0;
+		else
+			WFIFOB(fd,20+i*22) = sd->status.cart[index].attribute;
 		WFIFOB(fd,21+i*22) = sd->status.cart[index].refine;
 		clif_addcards(WFIFOP(fd,22+i*22), &sd->status.cart[index]);
 	}

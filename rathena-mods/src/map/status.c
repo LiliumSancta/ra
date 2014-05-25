@@ -2958,6 +2958,8 @@ int status_calc_pc_(struct map_session_data* sd, enum e_status_calc_opt opt)
 			continue;
 		if(!sd->inventory_data[index])
 			continue;
+		if( sd->status.inventory[index].attribute == 5 ) // Itens Visuais - Lilium Sancta/Fallen Angel~
+ 			continue; 
 
 		status->def += sd->inventory_data[index]->def;
 

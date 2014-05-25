@@ -7778,6 +7778,14 @@ static const struct _battle_data {
 	{ "drop_rateincrease",                  &battle_config.drop_rateincrease,               0,      0,      1,              },
 	{ "feature.auction",                    &battle_config.feature_auction,                 0,      0,      2,              },
 	{ "feature.banking",                    &battle_config.feature_banking,                 1,      0,      1,              },
+
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+	{ "costume_trade",                      &battle_config.costume_trade,                   1,      0,      1,              },
+	{ "costume_drop",                       &battle_config.costume_drop,                    1,      0,      1,              },
+	{ "costume_sell",                       &battle_config.costume_sell,                    1,      0,      1,              },
+	{ "costume_vend",                       &battle_config.costume_vend,                    1,      0,      1,              },
+	{ "reserved_costume_id",                &battle_config.reserved_costume_id,             999998, 0,      INT_MAX,        },
+
 #ifdef VIP_ENABLE
 	{ "vip_storage_increase",               &battle_config.vip_storage_increase,            0,      0,      MAX_STORAGE-MIN_STORAGE, },
 #else

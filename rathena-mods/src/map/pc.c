@@ -603,7 +603,7 @@ int pc_setnewpc(struct map_session_data *sd, int account_id, int char_id, int lo
 }
 
 int pc_equippoint(struct map_session_data *sd,int n){
-	int ep = 0;
+	int ep = 0, char_id = 0; // Itens Visuais - Lilium Sancta/Fallen Angel~
 
 	nullpo_ret(sd);
 
@@ -621,6 +621,16 @@ int pc_equippoint(struct map_session_data *sd,int n){
 			(sd->class_&MAPID_UPPERMASK) == MAPID_KAGEROUOBORO))//Kagerou and Oboro can dual wield daggers. [Rytech]
 			return EQP_ARMS;
 	}
+
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if(sd->status.inventory[n].card[0] == CARD0_CREATE && 
+		(char_id = MakeDWord(sd->status.inventory[n].card[2],sd->status.inventory[n].card[3])) == battle_config.reserved_costume_id || sd->status.inventory[n].attribute == 5)
+	{
+		if( ep&EQP_HEAD_TOP ) { ep &= ~EQP_HEAD_TOP; ep |= EQP_COSTUME_HEAD_TOP; }
+		if( ep&EQP_HEAD_LOW ) { ep &= ~EQP_HEAD_LOW; ep |= EQP_COSTUME_HEAD_LOW; }
+		if( ep&EQP_HEAD_MID ) { ep &= ~EQP_HEAD_MID; ep |= EQP_COSTUME_HEAD_MID; }
+	}
+
 	return ep;
 }
 
@@ -924,6 +934,10 @@ int pc_isequip(struct map_session_data *sd,int n)
 	nullpo_ret(sd);
 
 	item = sd->inventory_data[n];
+
+	//Item Costume
+	if ( sd->status.inventory[n].attribute == 5 ) 
+ 		return 1;
 
 	if(pc_has_permission(sd, PC_PERM_USE_ALL_EQUIPMENT))
 		return 1;
@@ -4198,6 +4212,13 @@ int pc_dropitem(struct map_session_data *sd,int n,int amount)
 	{
 		clif_displaymessage (sd->fd, msg_txt(sd,271));
 		return 0; //Can't drop items in nodrop mapflag maps.
+	}
+
+	//Item Costume
+	if( !battle_config.costume_drop && sd->status.inventory[n].attribute == 5 )
+	{
+		clif_displaymessage (sd->fd, msg_txt(sd,263));
+		return 0;
 	}
 
 	if( !pc_candrop(sd,&sd->status.inventory[n]) )
@@ -8670,7 +8691,7 @@ static int pc_checkcombo(struct map_session_data *sd, struct item_data *data) {
 				if( k == EQI_HEAD_MID &&  sd->equip_index[EQI_HEAD_LOW] == index ) continue;
 				if( k == EQI_HEAD_TOP && (sd->equip_index[EQI_HEAD_MID] == index || sd->equip_index[EQI_HEAD_LOW] == index) ) continue;
 
-				if(!sd->inventory_data[index])
+				if(!sd->inventory_data[index] || sd->status.inventory[index].attribute == 5) // Itens Visuais - Lilium Sancta/Fallen Angel~
 					continue;
 				if(j>0){
 					uint8 z;
@@ -8813,7 +8834,7 @@ int pc_load_combo(struct map_session_data *sd) {
  *------------------------------------------*/
 bool pc_equipitem(struct map_session_data *sd,int n,int req_pos)
 {
-	int i,pos,flag=0,iflag;
+	int i,pos,flag=0,iflag, char_id=0;
 	struct item_data *id;
 
 	nullpo_retr(false,sd);
@@ -8869,6 +8890,15 @@ bool pc_equipitem(struct map_session_data *sd,int n,int req_pos)
 			flag = 1;
 		else
 			flag = id->range != sd->inventory_data[i]->range;
+	}
+
+// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if(sd->status.inventory[n].card[0] == CARD0_CREATE &&
+		(char_id = MakeDWord(sd->status.inventory[n].card[2],sd->status.inventory[n].card[3])) == battle_config.reserved_costume_id || sd->status.inventory[n].attribute == 5)
+	{ 
+		if( pos&EQP_HEAD_TOP ) { pos &= ~EQP_HEAD_TOP; pos |= EQP_COSTUME_HEAD_TOP; }
+		if( pos&EQP_HEAD_LOW ) { pos &= ~EQP_HEAD_LOW; pos |= EQP_COSTUME_HEAD_LOW; }
+		if( pos&EQP_HEAD_MID ) { pos &= ~EQP_HEAD_MID; pos |= EQP_COSTUME_HEAD_MID; }
 	}
 
 	for(i=0;i<EQI_MAX;i++) {
@@ -8973,7 +9003,7 @@ bool pc_equipitem(struct map_session_data *sd,int n,int req_pos)
 	iflag = sd->npc_item_flag;
 
 	/* check for combos (MUST be before status_calc_pc) */
-	if( id->combos_count )
+	if( id->combos_count)
 		pc_checkcombo(sd,id);
 	if(itemdb_isspecial(sd->status.inventory[n].card[0]))
 		; //No cards
@@ -8994,7 +9024,8 @@ bool pc_equipitem(struct map_session_data *sd,int n,int req_pos)
 		clif_skillinfoblock(sd);
 
 	//OnEquip script [Skotlex]
-	if (id) {
+	// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if (id && sd->status.inventory[n].attribute != 5) {
 		//only run the script if item isn't restricted
 		if (id->equip_script && (pc_has_permission(sd,PC_PERM_USE_ALL_EQUIPMENT) || !itemdb_isNoEquip(id,sd->bl.m)))
 			run_script(id->equip_script,0,sd->bl.id,fake_nd->bl.id);
@@ -9170,7 +9201,8 @@ bool pc_unequipitem(struct map_session_data *sd,int n,int flag) {
 		status_change_end(&sd->bl, SC_SIGNUMCRUCIS, INVALID_TIMER);
 
 	//OnUnEquip script [Skotlex]
-	if (sd->inventory_data[n]) {
+	//Item Costume
+	if (sd->inventory_data[n] && sd->status.inventory[n].attribute != 5) {
 		if (sd->inventory_data[n]->unequip_script)
 			run_script(sd->inventory_data[n]->unequip_script,0,sd->bl.id,fake_nd->bl.id);
 		if(itemdb_isspecial(sd->status.inventory[n].card[0]))

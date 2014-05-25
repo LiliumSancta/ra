@@ -76,7 +76,7 @@
 
 // for produce
 #define MIN_ATTRIBUTE 0
-#define MAX_ATTRIBUTE 4
+#define MAX_ATTRIBUTE 5 // Itens Visuais - Lilium Sancta/Fallen Angel~
 #define ATTRIBUTE_NORMAL 0
 #define MIN_STAR 0
 #define MAX_STAR 3

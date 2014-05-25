@@ -361,6 +361,13 @@ void trade_tradeadditem(struct map_session_data *sd, short index, short amount)
 	if( amount < 0 || amount > sd->status.inventory[index].amount )
 		return;
 
+	// Itens Visuais - Lilium Sancta/Fallen Angel~
+	if( !battle_config.costume_trade && sd->status.inventory[index].attribute == 5 ){
+		clif_displaymessage (sd->fd, msg_txt(sd,260));
+		clif_tradeitemok(sd, index+2, 1);
+		return;
+	}
+
 	item = &sd->status.inventory[index];
 	src_lv = pc_get_group_level(sd);
 	dst_lv = pc_get_group_level(target_sd);
